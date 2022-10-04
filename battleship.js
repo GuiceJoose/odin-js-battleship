@@ -1,12 +1,12 @@
 const Ship = (length) => {
   let hits = 0;
   function hit() {
-    if (this.hits < this.length) {
-      ++this.hits;
+    if (hits < length) {
+      ++hits;
     }
   }
   function isSunk() {
-    if (this.hits === this.length) {
+    if (hits === length) {
       return true;
     } else {
       return false;
@@ -57,4 +57,139 @@ const Gameboard = () => {
   };
 };
 
-module.exports = { Ship, Gameboard };
+const Player = (playerType) => {
+  let playerBoard = Gameboard();
+  let isTurn = false;
+  let possibleAttacks = [];
+  for (i = 0; i < 10; i++) {
+    for (j = 0; j < 10; j++) possibleAttacks.push([i, j]);
+  }
+
+  function pickRandomAttack() {
+    const attackIndex = Math.floor(Math.random() * possibleAttacks.length);
+    const attack = possibleAttacks[attackIndex];
+    possibleAttacks.splice(attackIndex, 1);
+    return attack;
+  }
+
+  return {
+    playerBoard,
+    isTurn,
+    possibleAttacks,
+    pickRandomAttack,
+    playerType,
+  };
+};
+
+const GameController = () => {
+  renderGameBoards(player1.playerBoard.board, player2.playerBoard.board);
+  addClickListener();
+  if (player1.isTurn === true) {
+    if (player2.playerBoard.allSunk() === true) {
+      renderGameBoards(player1.playerBoard.board, player2.playerBoard.board);
+      return;
+    }
+  }
+
+  if (player2.isTurn === true) {
+    let player2Attack = player2.pickRandomAttack();
+    player1.playerBoard.recieveAttack(player2Attack[0], player2Attack[1]);
+    if (player1.playerBoard.allSunk() === true) {
+      renderGameBoards(player1.playerBoard.board, player2.playerBoard.board);
+      return;
+    }
+    player2.isTurn = false;
+    player1.isTurn = true;
+    setTimeout(GameController, 100);
+  }
+};
+
+const renderGameBoards = (board1, board2) => {
+  p1BoardArea = document.querySelector(".p1-board");
+  p1BoardArea.innerHTML = "";
+  for (i = 0; i < board1.length; i++) {
+    for (j = 0; j < board1[i].length; j++) {
+      const square = document.createElement("div");
+      square.setAttribute("coords", `${j}${i}`);
+      square.classList.add("square");
+      if (
+        // Uses stringify in helper function to check if coords of square being rendered
+        // are missing from possible attacks array, indicating a hit ship
+        isArray1InArray2([i, j], player2.possibleAttacks) === false &&
+        board1[j][i] !== undefined &&
+        board1[j][i] !== "miss"
+      ) {
+        square.classList.add("hit");
+      }
+      if (board1[j][i] !== undefined && board1[j][i] !== "miss") {
+        square.classList.add("ship");
+      }
+      if (board1[j][i] === "miss") {
+        square.classList.add("miss");
+      }
+      p1BoardArea.appendChild(square);
+    }
+  }
+
+  p2BoardArea = document.querySelector(".p2-board");
+  p2BoardArea.innerHTML = "";
+  for (i = 0; i < board2.length; i++) {
+    for (j = 0; j < board2[i].length; j++) {
+      const square = document.createElement("div");
+      square.setAttribute("coords", `${j}${i}`);
+      square.classList.add("square");
+      if (
+        // Uses stringify in helper function to check if coords of square being rendered
+        // are missing from possible attacks array, indicating a hit ship
+        isArray1InArray2([i, j], player1.possibleAttacks) === false &&
+        board2[j][i] !== undefined &&
+        board2[j][i] !== "miss"
+      ) {
+        square.classList.add("hit");
+      }
+      if (board2[j][i] === "miss") {
+        square.classList.add("miss");
+      }
+      p2BoardArea.appendChild(square);
+    }
+  }
+};
+
+let player1 = Player("computer");
+let player2 = Player("computer");
+
+player1.playerBoard.placeShipHorizontally(5, 0, 0);
+player1.playerBoard.placeShipHorizontally(4, 0, 4);
+player1.playerBoard.placeShipVertically(3, 7, 0);
+player1.playerBoard.placeShipVertically(2, 9, 6);
+player2.playerBoard.placeShipVertically(5, 0, 0);
+player2.playerBoard.placeShipVertically(4, 3, 0);
+player2.playerBoard.placeShipHorizontally(3, 0, 7);
+player2.playerBoard.placeShipHorizontally(2, 3, 9);
+
+player1.isTurn = true;
+
+GameController();
+//module.exports = { Ship, Gameboard, Player, GameController };
+
+function isArray1InArray2(arr1, arr2) {
+  const stringyArr1 = JSON.stringify(arr1);
+  const stringyArr2 = JSON.stringify(arr2);
+  const result = stringyArr2.indexOf(stringyArr1);
+  if (result === -1) {
+    return false;
+  } else {
+    return true;
+  }
+}
+
+function addClickListener() {
+  let squares = document.querySelectorAll(".square");
+  squares.forEach((square) =>
+    square.addEventListener("click", handleAttackClick)
+  );
+}
+
+function handleAttackClick(event) {
+  console.log(event.target.attributes.coords.value);
+}

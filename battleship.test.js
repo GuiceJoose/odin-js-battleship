@@ -1,5 +1,6 @@
 const Ship = require("./battleship").Ship;
 const Gameboard = require("./battleship").Gameboard;
+const Player = require("./battleship").Player;
 
 test("Ship created with length=3 has length of 3", () => {
   const ship3 = Ship(3);

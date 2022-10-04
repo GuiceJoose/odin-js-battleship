@@ -1,0 +1,28 @@
+.game-area {
+  display: flex;
+  gap: 20px;
+}
+
+.p1-board,
+.p2-board {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+}
+
+.square {
+  width: 25px;
+  height: 25px;
+  border: 1px black solid;
+}
+
+.ship {
+  background-color: green;
+}
+
+.miss {
+  background-color: red;
+}
+
+.hit {
+  background-color: black;
+}
