@@ -60,6 +60,7 @@ const Gameboard = () => {
 const Player = (playerType) => {
   let playerBoard = Gameboard();
   let isTurn = false;
+  let hits = [];
   let possibleAttacks = [];
   for (i = 0; i < 10; i++) {
     for (j = 0; j < 10; j++) possibleAttacks.push([i, j]);
@@ -78,24 +79,82 @@ const Player = (playerType) => {
     possibleAttacks,
     pickRandomAttack,
     playerType,
+    hits,
   };
 };
 
 const GameController = () => {
-  renderGameBoards(player1.playerBoard.board, player2.playerBoard.board);
-  addClickListener();
-  if (player1.isTurn === true) {
+  let board1 = player1.playerBoard.board;
+  let board2 = player2.playerBoard.board;
+  function checkGameOver() {
+    if (player1.playerBoard.allSunk() === true) {
+      return alert("player 2 wins");
+    }
     if (player2.playerBoard.allSunk() === true) {
-      renderGameBoards(player1.playerBoard.board, player2.playerBoard.board);
+      return alert("player 1 wins");
+    }
+  }
+  function switchTurns() {
+    if (player1.isTurn === true) {
+      player1.isTurn = false;
+      player2.isTurn = true;
+      return;
+    }
+    if (player2.isTurn === true) {
+      player2.isTurn = false;
+      player1.isTurn = true;
       return;
     }
   }
+  function addClickListener() {
+    let squares = document.querySelectorAll(".computer-tile");
+    squares.forEach((square) =>
+      square.addEventListener("click", handleAttackClick)
+    );
+  }
+
+  function handleAttackClick(event) {
+    let x = parseInt(event.target.attributes.xcoord.value);
+    let y = parseInt(event.target.attributes.ycoord.value);
+    if (
+      // attack is a hit
+      player2.playerBoard.board[x][y] !== undefined &&
+      player2.playerBoard.board[x][y] !== "miss" &&
+      isArray1InArray2([x, y], player1.hits) === false
+    ) {
+      player1.hits.push([x, y]);
+      player2.playerBoard.recieveAttack(x, y);
+      switchTurns();
+      GameController();
+    }
+    if (
+      // attack is a miss
+      player2.playerBoard.board[x][y] === undefined
+    ) {
+      player2.playerBoard.recieveAttack(x, y);
+      switchTurns();
+      GameController();
+    }
+    if (
+      // attack has already been selected -> do nothing
+      player2.playerBoard.board[x][y] === "miss" ||
+      isArray1InArray2([x, y], player1.hits) === true
+    ) {
+      return;
+    }
+
+    console.log(player1.hits);
+  }
+
+  renderGameBoards(board1, board2);
+  addClickListener();
+  checkGameOver();
 
   if (player2.isTurn === true) {
     let player2Attack = player2.pickRandomAttack();
     player1.playerBoard.recieveAttack(player2Attack[0], player2Attack[1]);
     if (player1.playerBoard.allSunk() === true) {
-      renderGameBoards(player1.playerBoard.board, player2.playerBoard.board);
+      renderGameBoards(board1, board2);
       return;
     }
     player2.isTurn = false;
@@ -110,7 +169,6 @@ const renderGameBoards = (board1, board2) => {
   for (i = 0; i < board1.length; i++) {
     for (j = 0; j < board1[i].length; j++) {
       const square = document.createElement("div");
-      square.setAttribute("coords", `${j}${i}`);
       square.classList.add("square");
       if (
         // Uses stringify in helper function to check if coords of square being rendered
@@ -136,12 +194,14 @@ const renderGameBoards = (board1, board2) => {
   for (i = 0; i < board2.length; i++) {
     for (j = 0; j < board2[i].length; j++) {
       const square = document.createElement("div");
-      square.setAttribute("coords", `${j}${i}`);
+      square.setAttribute("xcoord", j);
+      square.setAttribute("ycoord", i);
       square.classList.add("square");
+      square.classList.add("computer-tile");
       if (
         // Uses stringify in helper function to check if coords of square being rendered
         // are missing from possible attacks array, indicating a hit ship
-        isArray1InArray2([i, j], player1.possibleAttacks) === false &&
+        isArray1InArray2([j, i], player1.hits) === true &&
         board2[j][i] !== undefined &&
         board2[j][i] !== "miss"
       ) {
@@ -155,7 +215,7 @@ const renderGameBoards = (board1, board2) => {
   }
 };
 
-let player1 = Player("computer");
+let player1 = Player("human");
 let player2 = Player("computer");
 
 player1.playerBoard.placeShipHorizontally(5, 0, 0);
@@ -181,15 +241,4 @@ function isArray1InArray2(arr1, arr2) {
   } else {
     return true;
   }
-}
-
-function addClickListener() {
-  let squares = document.querySelectorAll(".square");
-  squares.forEach((square) =>
-    square.addEventListener("click", handleAttackClick)
-  );
-}
-
-function handleAttackClick(event) {
-  console.log(event.target.attributes.coords.value);
 }
